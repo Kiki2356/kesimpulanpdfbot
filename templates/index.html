@@ -1,32 +1,33 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Status Bot</title>
+    <title>Status Bot Telegram</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <style>
-        body {
-            text-align: center;
-            padding: 50px;
+        .container {
+            margin-top: 50px;
         }
-
-        h1 {
+        .status-message {
             font-size: 24px;
-        }
-
-        .status {
-            font-size: 18px;
-            margin-top: 20px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 20px;
         }
     </style>
 </head>
 <body>
-    <h1>Status Bot Telegram</h1>
-    <div class="status">
+    <div class="container">
         {% if bot_running %}
-            Bot sedang berjalan.
+            <div class="alert alert-success status-message" role="alert">
+                Bot sedang berjalan
+            </div>
         {% else %}
-            Bot tidak berjalan.
+            <div class="alert alert-danger status-message" role="alert">
+                Bot tidak berjalan
+            </div>
         {% endif %}
     </div>
+
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
 </html>
-
