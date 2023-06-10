@@ -4,28 +4,36 @@
     <title>Status Bot Telegram</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <style>
+        body {
+            background-color: #f8f9fa;
+        }
         .container {
-            margin-top: 50px;
+            margin-top: 100px;
+            text-align: center;
         }
         .status-message {
-            font-size: 24px;
+            font-size: 36px;
             font-weight: bold;
-            text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .btn-start {
+            padding: 10px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 30px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        {% if bot_running %}
-            <div class="alert alert-success status-message" role="alert">
+        <h1 class="status-message {% if bot_running %}text-success{% else %}text-danger{% endif %}">
+            {% if bot_running %}
                 Bot sedang berjalan
-            </div>
-        {% else %}
-            <div class="alert alert-danger status-message" role="alert">
+            {% else %}
                 Bot tidak berjalan
-            </div>
-        {% endif %}
+            {% endif %}
+        </h1>
+        <a href="/start" class="btn btn-primary btn-start">Mulai Bot</a>
     </div>
 
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
