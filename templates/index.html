@@ -11,10 +11,28 @@
             margin-top: 100px;
             text-align: center;
         }
-        .status-message {
-            font-size: 36px;
-            font-weight: bold;
+        .status-section {
             margin-bottom: 30px;
+        }
+        .status-heading {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .status-message {
+            font-size: 18px;
+        }
+        .log-section {
+            margin-bottom: 30px;
+        }
+        .log-heading {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .log-message {
+            font-size: 18px;
+            white-space: pre-wrap;
         }
         .btn-start {
             padding: 10px 30px;
@@ -26,20 +44,35 @@
 </head>
 <body>
     <div class="container">
-        <h1 class="status-message" id="statusMessage"></h1>
+        <div class="status-section">
+            <h2 class="status-heading">Status Script</h2>
+            <p class="status-message" id="scriptStatus"></p>
+        </div>
+        
+        <div class="log-section">
+            <h2 class="log-heading">Log Bot</h2>
+            <p class="log-message" id="botLog"></p>
+        </div>
+
         <a href="/start" class="btn btn-primary btn-start">Mulai Bot</a>
     </div>
 
-    <script>
-        var botRunning = {{ bot_running|lower }};
-
-        if (botRunning) {
-            document.getElementById('statusMessage').textContent = 'Bot sedang berjalan';
-        } else {
-            document.getElementById('statusMessage').textContent = 'Bot tidak berjalan';
-        }
-    </script>
-
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        var scriptRunning = {{ script_running|lower }};
+        var botLog = `{{ bot_log }}`;
+
+        // Update script status
+        var scriptStatusElement = document.getElementById('scriptStatus');
+        if (scriptRunning) {
+            scriptStatusElement.textContent = 'Script sedang berjalan';
+        } else {
+            scriptStatusElement.textContent = 'Script tidak berjalan';
+        }
+
+        // Update bot log
+        var botLogElement = document.getElementById('botLog');
+        botLogElement.textContent = botLog;
+    </script>
 </body>
 </html>
