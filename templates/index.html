@@ -26,15 +26,19 @@
 </head>
 <body>
     <div class="container">
-        <h1 class="status-message">
-            {% if bot_running %}
-                Bot sedang berjalan
-            {% else %}
-                Bot tidak berjalan
-            {% endif %}
-        </h1>
+        <h1 class="status-message" id="statusMessage"></h1>
         <a href="/start" class="btn btn-primary btn-start">Mulai Bot</a>
     </div>
+
+    <script>
+        var botRunning = {{ bot_running|lower }};
+
+        if (botRunning) {
+            document.getElementById('statusMessage').textContent = 'Bot sedang berjalan';
+        } else {
+            document.getElementById('statusMessage').textContent = 'Bot tidak berjalan';
+        }
+    </script>
 
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
