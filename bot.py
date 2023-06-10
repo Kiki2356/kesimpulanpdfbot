@@ -1,14 +1,44 @@
-from flask import Flask, render_template
 import logging
+from telegram import Update
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 from fpdf import FPDF
+from flask import Flask, render_template
+from threading import Thread
 import os
 
+# Inisialisasi aplikasi Flask
 app = Flask(__name__)
+
+# Inisialisasi status bot
 bot_running = False
+bot_error = ""
+
+# Fungsi untuk memulai bot
+def start_bot():
+    global bot_running, bot_error
+    try:
+        # Mendapatkan token bot Telegram dari variabel lingkungan
+        token = os.environ.get('TELEGRAM_BOT_TOKEN')
+
+        # Buat objek updater dan pengendali
+        updater = Updater(token, use_context=True)
+        dp = updater.dispatcher
+
+        # Daftarkan handler perintah /start
+        dp.add_handler(CommandHandler("start", start))
+
+        # Daftarkan handler untuk mengunggah file PDF
+        dp.add_handler(MessageHandler(Filters.document, handle_upload_pdf))
+
+        # Jalankan bot
+        updater.start_polling()
+        bot_running = True
+    except Exception as e:
+        bot_error = str(e)
+        bot_running = False
 
 # Fungsi untuk mengolah file PDF dan membuat kesimpulan jurnal
-def handle_upload_pdf(update, context):
+def handle_upload_pdf(update: Update, context):
     # Periksa apakah file PDF telah dikirimkan
     if not update.message.document:
         update.message.reply_text('Mohon unggah file PDF.')
@@ -33,35 +63,23 @@ def handle_upload_pdf(update, context):
     # Kirim PDF hasil kesimpulan ke pengguna
     context.bot.send_document(chat_id=update.effective_chat.id, document=open("output.pdf", "rb"))
 
-def start(update, context):
-    global bot_running
-    bot_running = True
-    update.message.reply_text('Bot Telegram telah diaktifkan.')
-
-def run_bot():
-    # Dapatkan token akses bot dari variabel lingkungan
-    token = os.getenv("TELEGRAM_BOT_TOKEN")
-
-    # Buat objek updater dan pengendali dengan token akses
-    updater = Updater(token, use_context=True)
-    dp = updater.dispatcher
-
-    # Daftarkan handler perintah /start
-    dp.add_handler(CommandHandler("start", start))
-
-    # Daftarkan handler untuk mengunggah file PDF
-    dp.add_handler(MessageHandler(Filters.document, handle_upload_pdf))
-
-    # Jalankan bot
-    updater.start_polling()
-
-    # Matikan bot saat ditekan Ctrl+C
-    updater.idle()
-
-@app.route('/')
+# Route untuk halaman utama
+@app.route("/")
 def index():
-    return render_template('index.html', bot_running=bot_running)
+    return render_template("index.html", bot_running=bot_running, bot_error=bot_error)
 
-if __name__ == '__main__':
-    logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
-    app.run(debug=False, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+# Route untuk memulai bot
+@app.route("/start")
+def start():
+    global bot_running, bot_error
+    if not bot_running:
+        # Memulai bot di dalam thread terpisah agar tidak menghentikan aplikasi Flask
+        bot_thread = Thread(target=start_bot)
+        bot_thread.start()
+        bot_running = True
+        bot_error = ""
+    return "Bot telah dimulai"
+
+# Menjalankan aplikasi Flask
+if __name__ == "__main__":
+    app.run()
