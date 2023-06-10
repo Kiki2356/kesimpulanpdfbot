@@ -1,0 +1,6 @@
+env: python
+scripts:
+  - name: Install Dependencies
+    cmd: pip install -r requirements.txt
+  - name: Start
+    cmd: python bot.py
