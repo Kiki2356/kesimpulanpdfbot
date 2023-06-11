@@ -1,85 +1,63 @@
-import logging
-from telegram import Update
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
-from fpdf import FPDF
-from flask import Flask, render_template
-from threading import Thread
 import os
+import telegram
+from telegram.ext import Updater, MessageHandler, filters
+import PyPDF2
+from sumy.parsers.plaintext import PlaintextParser
+from sumy.nlp.tokenizers import Tokenizer
+from sumy.summarizers.lex_rank import LexRankSummarizer
 
-# Inisialisasi aplikasi Flask
-app = Flask(__name__)
+# Mengambil token bot dari environment variable
+bot_token = os.getenv('BOT_TOKEN')
+bot = telegram.Bot(token=bot_token)
 
-# Inisialisasi status bot
-bot_running = False
-bot_error = ""
+# Fungsi untuk menangani pesan yang diterima
+def handle_message(update, context):
+    message = update.message
+    chat_id = message.chat_id
 
-# Fungsi untuk memulai bot
-def start_bot():
-    global bot_running, bot_error
-    try:
-        # Mendapatkan token bot Telegram dari variabel lingkungan
-        token = os.environ.get('TELEGRAM_BOT_TOKEN')
+    # Cek jika pesan berisi file PDF
+    if message.document:
+        file_id = message.document.file_id
+        file = bot.get_file(file_id)
+        file.download('input.pdf')
+        text = extract_text_from_pdf('input.pdf')
+    else:
+        text = message.text
 
-        # Buat objek updater dan pengendali
-        updater = Updater(token, use_context=True)
-        dp = updater.dispatcher
+    # Membuat kesimpulan menggunakan pendekatan ekstraksi informasi
+    summary = summarize_text(text)
 
-        # Daftarkan handler perintah /start
-        dp.add_handler(CommandHandler("start", start))
+    # Mengirimkan kesimpulan kembali ke pengguna
+    bot.send_message(chat_id=chat_id, text=summary)
 
-        # Daftarkan handler untuk mengunggah file PDF
-        dp.add_handler(MessageHandler(Filters.document, handle_upload_pdf))
+def extract_text_from_pdf(file_path):
+    with open(file_path, 'rb') as file:
+        pdf_reader = PyPDF2.PdfReader(file)
+        text = ''
+        for page in pdf_reader.pages:
+            text += page.extract_text()
+        return text
 
-        # Jalankan bot
-        updater.start_polling()
-        bot_running = True
-    except Exception as e:
-        bot_error = str(e)
-        bot_running = False
+def summarize_text(text):
+    parser = PlaintextParser.from_string(text, Tokenizer("english"))
+    summarizer = LexRankSummarizer()
+    summary_sentences = summarizer(parser.document, sentence_count=None)  # Tidak ada batasan jumlah kalimat
+    summary = " ".join([str(sentence) for sentence in summary_sentences])
+    return summary
 
-# Fungsi untuk mengolah file PDF dan membuat kesimpulan jurnal
-def handle_upload_pdf(update: Update, context):
-    # Periksa apakah file PDF telah dikirimkan
-    if not update.message.document:
-        update.message.reply_text('Mohon unggah file PDF.')
-        return
+def main():
+    # Membuat objek updater dan dispatcher
+    updater = Updater(bot_token)
+    dispatcher = updater.dispatcher
 
-    # Dapatkan objek file PDF dari pesan
-    pdf_file = update.message.document.get_file()
-    pdf_file.download("input.pdf")
+    # Menambahkan handler untuk pesan yang diterima
+    message_handler = MessageHandler(filters.all, handle_message)
+    dispatcher.add_handler(message_handler)
 
-    # Proses file PDF dan buat kesimpulan jurnal
+    # Memulai bot
+    updater.start_polling()
+    print("Bot is running...")
+    updater.idle()
 
-    # Buat PDF hasil kesimpulan
-    output_pdf = FPDF()
-    output_pdf.add_page()
-    output_pdf.set_font("Arial", size=12)
-    output_pdf.cell(200, 10, txt="Kesimpulan jurnal", ln=1, align="C")
-    output_pdf.cell(200, 10, txt="Isi kesimpulan jurnal...", ln=2, align="L")
-
-    # Simpan PDF hasil kesimpulan
-    output_pdf.output("output.pdf")
-
-    # Kirim PDF hasil kesimpulan ke pengguna
-    context.bot.send_document(chat_id=update.effective_chat.id, document=open("output.pdf", "rb"))
-
-# Route untuk halaman utama
-@app.route("/")
-def index():
-    return render_template("index.html", bot_running=bot_running, bot_error=bot_error)
-
-# Route untuk memulai bot
-@app.route("/start")
-def start():
-    global bot_running, bot_error
-    if not bot_running:
-        # Memulai bot di dalam thread terpisah agar tidak menghentikan aplikasi Flask
-        bot_thread = Thread(target=start_bot)
-        bot_thread.start()
-        bot_running = True
-        bot_error = ""
-    return "Bot telah dimulai"
-
-# Menjalankan aplikasi Flask
-if __name__ == "__main__":
-    app.run()
+if __name__ == '__main__':
+    main()
